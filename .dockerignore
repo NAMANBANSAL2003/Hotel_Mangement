@@ -1,0 +1,11 @@
+bin
+backend/bin
+*.class
+*.log
+*.tmp
+*.swp
+.idea
+.vscode
+target
+.git
+.gitignore
