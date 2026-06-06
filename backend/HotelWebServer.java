@@ -14,18 +14,46 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 
 public class HotelWebServer {
-    private static final int PORT = 8080;
+    private static final int PORT = resolvePort();
     private final HotelService hotel = new HotelManager();
-    private final Path webRoot = Paths.get("web");
+    private final Path webRoot = resolveWebRoot();
+    private final Path imageRoot = resolveImageRoot();
+
+    private static int resolvePort() {
+        String port = System.getenv("PORT");
+        if (port != null && !port.isBlank()) {
+            try {
+                return Integer.parseInt(port.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 8080;
+    }
+
+    private static Path resolveStaticRoot(String primary, String fallback) {
+        Path candidate = Paths.get(primary);
+        if (Files.exists(candidate)) {
+            return candidate.toAbsolutePath().normalize();
+        }
+        candidate = Paths.get(fallback);
+        return candidate.toAbsolutePath().normalize();
+    }
+
+    private static Path resolveWebRoot() {
+        return resolveStaticRoot("frontend/web", Paths.get("..", "frontend", "web").toString());
+    }
+
+    private static Path resolveImageRoot() {
+        return resolveStaticRoot("frontend/images", Paths.get("..", "frontend", "images").toString());
+    }
 
     public static void main(String[] args) throws IOException {
         new HotelWebServer().start();
     }
-
-    private final Path imageRoot = Paths.get("images");
 
     private void start() throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", PORT), 0);
@@ -35,15 +63,20 @@ public class HotelWebServer {
         server.createContext("/api/cancel", new CancelHandler());
         server.setExecutor(Executors.newCachedThreadPool());
         server.start();
-        System.out.println("Hotel web UI available at http://localhost:" + PORT);
+        System.out.println("Hotel web UI available at http://0.0.0.0:" + PORT);
+        System.out.println("Serving web root from " + webRoot);
+        System.out.println("Serving image root from " + imageRoot);
     }
 
     private class RootHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
-            if (path.equals("/") || path.isEmpty()) {
+            if (path == null || path.isEmpty() || path.equals("/")) {
                 path = "/index.html";
+            }
+            if (path.endsWith("/")) {
+                path = path + "index.html";
             }
             Path root = webRoot;
             Path filePath;
@@ -53,7 +86,14 @@ public class HotelWebServer {
             } else {
                 filePath = webRoot.resolve(path.substring(1)).normalize();
             }
-            if (!filePath.startsWith(root) || !Files.exists(filePath)) {
+            if (!filePath.startsWith(root)) {
+                sendNotFound(exchange);
+                return;
+            }
+            if (Files.isDirectory(filePath)) {
+                filePath = filePath.resolve("index.html");
+            }
+            if (!Files.exists(filePath)) {
                 sendNotFound(exchange);
                 return;
             }

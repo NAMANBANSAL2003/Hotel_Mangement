@@ -8,5 +8,6 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/backend/bin backend/bin
 COPY --from=build /app/frontend frontend
+ENV PORT=8080
 EXPOSE 8080
 CMD ["java", "-cp", "backend/bin", "HotelWebServer"]
