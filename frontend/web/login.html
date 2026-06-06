@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sign In - Hotel Management</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="content" style="max-width:480px;margin:80px auto;">
+    <div class="form-card">
+      <h2>Sign In</h2>
+      <form id="loginForm">
+        <label>Email address<input type="email" id="loginEmail" placeholder="name@example.com" required></label>
+        <label>Password<input type="password" id="loginPassword" placeholder="Password" required></label>
+        <button type="submit">Sign In</button>
+      </form>
+      <p class="form-note">New here? <a href="register.html" target="_blank" rel="noopener">Create an account</a>.</p>
+      <p class="form-message" id="loginMessage"></p>
+    </div>
+  </main>
+
+  <script>
+    function getUsers(){return JSON.parse(localStorage.getItem('hotel_users')||'{}');}
+    function setCurrentUserEmail(e){localStorage.setItem('hotel_current_user', e);}    
+    function setMessage(el, text, color='#fbbf24'){el.textContent = text; el.style.color = color}
+
+    document.getElementById('loginForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      var password = document.getElementById('loginPassword').value;
+      var users = getUsers();
+      var user = users[email];
+      var msg = document.getElementById('loginMessage');
+      if(!user || user.password !== password){ setMessage(msg, 'Invalid email or password.', '#f87171'); return; }
+      setCurrentUserEmail(email);
+      setMessage(msg, 'Signed in. Opening dashboard in a new tab...', '#34d399');
+      setTimeout(function(){ window.open('dashboard.html', '_blank'); }, 700);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Current Bookings</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>body{background:#071126;color:#fff;font-family:sans-serif}.container{max-width:900px;margin:40px auto}.card{background:rgba(255,255,255,0.03);padding:20px;border-radius:8px}.small-btn{background:#111827;color:#fff;padding:8px 12px;border-radius:8px;border:none}</style>
+</head>
+<body>
+  <div class="container">
+    <h2>Your Current Bookings</h2>
+    <div id="currentList" class="card">
+      <p id="noCurrent">No current bookings.</p>
+    </div>
+    <div style="margin-top:16px;">
+      <button id="backHome" class="small-btn">Back to Home</button>
+    </div>
+  </div>
+  <script>
+    function getCurrentUserEmail(){return localStorage.getItem('hotel_current_user');}
+    function loadCurrent(){
+      const email = getCurrentUserEmail();
+      const container = document.getElementById('currentList');
+      if (!email){ container.innerHTML='<p>Please sign in.</p>'; return; }
+      const items = JSON.parse(localStorage.getItem('hotel_bookings_'+email) || '[]');
+      if (!items || items.length===0){ document.getElementById('noCurrent').style.display='block'; return; }
+      // Consider current bookings as those with status 'Paid' and most recent
+      const current = items.filter(b=>b.status==='Paid');
+      if (!current || current.length===0){ document.getElementById('noCurrent').style.display='block'; return; }
+      document.getElementById('noCurrent').style.display='none';
+      container.innerHTML='';
+      current.forEach((b, idx)=>{
+        const div = document.createElement('div'); div.style.padding='12px 0'; div.style.borderBottom='1px solid rgba(255,255,255,0.04)';
+        div.innerHTML = `<div><strong>Room ${b.roomNumber}</strong> • ${b.roomType}</div><div>Guests: ${b.guestCount} • Paid: ₹${(b.total||0).toFixed(2)}</div>`;
+        const btn = document.createElement('button'); btn.className='small-btn'; btn.style.marginTop='8px'; btn.textContent='View Receipt';
+        btn.addEventListener('click', ()=>{ localStorage.setItem('hotel_last_receipt', JSON.stringify(b)); window.open('receipt.html','_self'); });
+        div.appendChild(btn);
+        container.appendChild(div);
+      });
+    }
+    document.getElementById('backHome').addEventListener('click', ()=> window.open('index.html','_self'));
+    window.addEventListener('load', loadCurrent);
+  </script>
+</body>
+</html>

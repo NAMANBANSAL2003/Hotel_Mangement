@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Payment History</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>body{background:#071126;color:#fff;font-family:sans-serif}.container{max-width:900px;margin:40px auto}.card{background:rgba(255,255,255,0.03);padding:20px;border-radius:8px}.entry{border-bottom:1px solid rgba(255,255,255,0.04);padding:12px 0;display:flex;justify-content:space-between;align-items:center}.small-btn{background:#111827;color:#fff;padding:8px 12px;border-radius:8px;border:none}</style>
+</head>
+<body>
+  <div class="container">
+    <h2>Payment History</h2>
+    <div id="historyList" class="card">
+      <p id="noHistory">No payment history available.</p>
+    </div>
+    <div style="margin-top:16px;">
+      <button id="backHome" class="small-btn">Back to Home</button>
+    </div>
+  </div>
+  <script>
+    function getCurrentUserEmail(){return localStorage.getItem('hotel_current_user');}
+    function loadHistory(){
+      const email = getCurrentUserEmail();
+      const listEl = document.getElementById('historyList');
+      if (!email){ listEl.innerHTML='<p>Please sign in.</p>'; return; }
+      const items = JSON.parse(localStorage.getItem('hotel_bookings_' + email) || '[]');
+      if (!items || items.length===0){ document.getElementById('noHistory').style.display='block'; return; }
+      document.getElementById('noHistory').style.display='none';
+      listEl.innerHTML='';
+      items.forEach((b, idx)=>{
+        const div = document.createElement('div'); div.className='entry';
+        const left = document.createElement('div');
+        left.innerHTML = `<div><strong>${new Date(b.date).toLocaleString()}</strong></div><div>Room ${b.roomNumber} • ${b.roomType}</div>`;
+        const right = document.createElement('div');
+        right.style.display='flex'; right.style.gap='8px';
+        const view = document.createElement('button'); view.className='small-btn'; view.textContent='View Receipt';
+        view.addEventListener('click', ()=>{ localStorage.setItem('hotel_last_receipt', JSON.stringify(b)); window.open('receipt.html','_self'); });
+        const dl = document.createElement('button'); dl.className='small-btn'; dl.textContent='Download';
+        dl.addEventListener('click', ()=>{ const text = `Receipt:\nDate: ${new Date(b.date).toLocaleString()}\nGuest: ${b.guestName}\nRoom: ${b.roomNumber}\nTotal: ₹${(b.total||0).toFixed(2)}`; const a=document.createElement('a'); a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(text); a.download='receipt_'+(b.roomNumber)+'_'+idx+'.txt'; document.body.appendChild(a); a.click(); a.remove(); });
+        right.appendChild(view); right.appendChild(dl);
+        div.appendChild(left); div.appendChild(right);
+        listEl.appendChild(div);
+      });
+    }
+    document.getElementById('backHome').addEventListener('click', ()=> window.open('index.html','_self'));
+    window.addEventListener('load', loadHistory);
+  </script>
+</body>
+</html>

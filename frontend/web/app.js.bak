@@ -1,0 +1,470 @@
+const sections = {
+    home: document.getElementById('homePage'),
+    login: document.getElementById('loginPage'),
+    register: document.getElementById('registerPage'),
+    dashboard: document.getElementById('dashboardPage')
+};
+
+// PAYMENT AND BOOKING MANAGEMENT
+let selectedRoomData = null;
+let bookingData = null;
+let couponApplied = false;
+const navLinks = document.querySelectorAll('.nav-link');
+const accountArea = document.getElementById('accountArea');
+const accountButton = document.getElementById('accountButton');
+const accountDropdown = document.getElementById('accountDropdown');
+const accountName = document.getElementById('accountName');
+const accountEmail = document.getElementById('accountEmail');
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const bookingForm = document.getElementById('bookingForm');
+const refreshRoomsButton = document.getElementById('refreshRooms');
+const availableRoomsSection = document.getElementById('availableRoomsSection');
+const availableRoomsList = document.getElementById('availableRoomsList');
+const availableCount = document.getElementById('availableCount');
+const bookingMessage = document.getElementById('bookingMessage');
+const loginMessage = document.getElementById('loginMessage');
+const registerMessage = document.getElementById('registerMessage');
+const verifyIdBtn = document.getElementById('verifyIdBtn');
+const verifyStatus = document.getElementById('verifyStatus');
+const submitBookingBtn = document.getElementById('submitBookingBtn');
+const btnBookRoom = document.getElementById('btnBookRoom');
+const btnAvailableRooms = document.getElementById('btnAvailableRooms');
+const bookingSection = document.getElementById('bookingSection');
+const paymentSection = document.getElementById('paymentSection');
+const processingSection = document.getElementById('processingSection');
+const receiptSection = document.getElementById('receiptSection');
+const historySection = document.getElementById('historySection');
+const historyList = document.getElementById('historyList');
+const paymentList = document.getElementById('paymentList');
+const signOutBtn = document.getElementById('signOutBtn');
+
+let idVerified = false;
+let currentUser = null;
+let currentRooms = [];
+
+function getUsers() {
+    return JSON.parse(localStorage.getItem('hotel_users') || '{}');
+}
+
+function saveUsers(users) {
+    localStorage.setItem('hotel_users', JSON.stringify(users));
+}
+
+function getCurrentUserEmail() {
+    return localStorage.getItem('hotel_current_user');
+}
+
+function setCurrentUserEmail(email) {
+    localStorage.setItem('hotel_current_user', email);
+}
+
+function clearCurrentUser() {
+    localStorage.removeItem('hotel_current_user');
+}
+
+function getCurrentUser() {
+    const email = getCurrentUserEmail();
+    if (!email) return null;
+    const users = getUsers();
+    return users[email] || null;
+}
+
+function getUserBookings(email) {
+    return JSON.parse(localStorage.getItem(`hotel_bookings_${email}`) || '[]');
+}
+
+function saveUserBooking(email, booking) {
+    const bookings = getUserBookings(email);
+    bookings.unshift(booking);
+    localStorage.setItem(`hotel_bookings_${email}`, JSON.stringify(bookings));
+}
+
+function route() {
+    const hash = (location.hash || '#home').replace('#', '');
+    if (hash === 'dashboard' && !currentUser) {
+        showSection('login');
+        location.hash = '#login';
+        return;
+    }
+    if (!sections[hash]) {
+        showSection('home');
+        location.hash = '#home';
+        return;
+    }
+    showSection(hash);
+}
+
+function showSection(name) {
+    Object.entries(sections).forEach(([key, section]) => {
+        section.classList.toggle('active', key === name);
+        section.classList.toggle('hidden', key !== name);
+    });
+    navLinks.forEach(link => link.classList.toggle('active', link.dataset.target === name));
+    if (name === 'dashboard') {
+        showDashboardPanels('available');
+        loadRooms();
+        updateHistory();
+    }
+}
+
+function updateAccountArea() {
+    currentUser = getCurrentUser();
+    if (currentUser) {
+        accountArea.classList.remove('hidden');
+        accountName.textContent = currentUser.name;
+        accountEmail.textContent = currentUser.email;
+        navLinks.forEach(link => {
+            if (link.dataset.target === 'login' || link.dataset.target === 'register') {
+                link.classList.add('hidden');
+            }
+        });
+    } else {
+        accountArea.classList.add('hidden');
+        navLinks.forEach(link => link.classList.remove('hidden'));
+    }
+}
+
+async function loadRooms() {
+    try {
+        const response = await fetch('/api/rooms');
+        currentRooms = await response.json();
+        renderRooms(currentRooms);
+    } catch (error) {
+        availableRoomsList.innerHTML = `<p>Unable to load rooms: ${error}</p>`;
+    }
+}
+
+function renderRooms(rooms) {
+    const availableRooms = rooms.filter(room => !room.booked);
+    availableCount.textContent = availableRooms.length;
+    if (availableRooms.length === 0) {
+        availableRoomsList.innerHTML = '<p>No rooms are currently available.</p>';
+        return;
+    }
+    availableRoomsList.innerHTML = availableRooms.map(room => `
+        <div class="room-item">
+            <strong>Room ${room.number}</strong>
+            <span>Type: ${room.type}</span>
+            <span>Max Guests: ${room.maxGuests}</span>
+            <span>Price: ₹${room.pricePerDay}/day (excl. GST)</span>
+            <span>Status: Available</span>
+            <button type="button" class="small-btn select-room-btn" data-room-number="${room.number}">Select</button>
+        </div>
+    `).join('');
+
+    document.querySelectorAll('.select-room-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const roomNumber = parseInt(e.target.dataset.roomNumber, 10);
+            selectRoom(roomNumber);
+        });
+    });
+}
+
+function selectRoom(roomNumber) {
+    const room = currentRooms.find(r => r.number === roomNumber && !r.booked);
+    if (!room) {
+        alert('Room not available');
+        return;
+    }
+    selectedRoomData = room;
+    document.getElementById('roomNumber').value = roomNumber;
+    document.getElementById('guestLimitInfo').textContent = `Max ${room.maxGuests} guests allowed`;
+    toggleActiveSidebar(btnBookRoom);
+    showDashboardPanels('book');
+    setTimeout(() => bookingSection.scrollIntoView({ behavior: 'smooth' }), 100);
+}
+
+function toggleActiveSidebar(button) {
+    [btnBookRoom, btnAvailableRooms].forEach(btn => btn.classList.toggle('active', btn === button));
+}
+
+function showDashboardPanels(panel) {
+    bookingSection.classList.toggle('hidden', panel !== 'book');
+    availableRoomsSection.classList.toggle('hidden', panel !== 'available');
+    historySection.classList.toggle('hidden', panel !== 'history');
+    paymentSection.classList.toggle('hidden', panel !== 'payment');
+    processingSection.classList.toggle('hidden', panel !== 'processing');
+    receiptSection.classList.toggle('hidden', panel !== 'receipt');
+}
+
+function updateHistory() {
+    if (!currentUser) {
+        historyList.innerHTML = '<p>Please sign in to view bookings.</p>';
+        paymentList.innerHTML = '<p>Please sign in to view payments.</p>';
+        return;
+    }
+    const bookings = getUserBookings(currentUser.email);
+    if (bookings.length === 0) {
+        historyList.innerHTML = '<p>No bookings yet.</p>';
+    } else {
+        historyList.innerHTML = bookings.map(b => {
+            const status = currentRooms.find(r => r.number === b.roomNumber && r.booked && r.guestName === b.guestName) ? 'Current' : 'Previous';
+            return `
+                <div class="history-item">
+                    <strong>Room ${b.roomNumber}</strong>
+                    <span>Guest: ${b.guestName}</span>
+                    <span>Days: ${b.bookingDays}</span>
+                    <span>Guests: ${b.guestCount}</span>
+                    <span>ID: ${b.idType} (${b.idNumber})</span>
+                    <span>Date: ${new Date(b.date).toLocaleString()}</span>
+                    <span>Amount: ₹${b.total?.toFixed(2) || 'N/A'}</span>
+                    <span>Status: ${status}</span>
+                </div>
+            `;
+        }).join('');
+    }
+    paymentList.innerHTML = '<div class="payment-item"><strong>No payment records yet.</strong><span>Your payment history will appear here after booking.</span></div>';
+}
+
+function setMessage(element, text, color = '#fbbf24') {
+    element.textContent = text;
+    element.style.color = color;
+}
+
+registerForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const name = document.getElementById('registerName').value.trim();
+    const email = document.getElementById('registerEmail').value.trim().toLowerCase();
+    const password = document.getElementById('registerPassword').value;
+    if (!name || !email || !password) {
+        setMessage(registerMessage, 'Please complete all sign-up fields.', '#f87171');
+        return;
+    }
+    const users = getUsers();
+    if (users[email]) {
+        setMessage(registerMessage, 'This email already has an account.', '#f87171');
+        return;
+    }
+    users[email] = { name, email, password };
+    saveUsers(users);
+    setMessage(registerMessage, 'Account created. Redirecting to login...', '#34d399');
+    setTimeout(() => {
+        location.hash = '#login';
+        route();
+    }, 1100);
+});
+
+loginForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    const password = document.getElementById('loginPassword').value;
+    const users = getUsers();
+    const user = users[email];
+    if (!user || user.password !== password) {
+        setMessage(loginMessage, 'Invalid email or password.', '#f87171');
+        return;
+    }
+    setCurrentUserEmail(email);
+    currentUser = user;
+    updateAccountArea();
+    setMessage(loginMessage, 'Signed in successfully. Loading dashboard...', '#34d399');
+    setTimeout(() => {
+        window.open('dashboard.html', '_blank');
+    }, 700);
+});
+
+document.getElementById('roomNumber').addEventListener('change', () => {
+    const roomNumber = parseInt(document.getElementById('roomNumber').value, 10);
+    const room = currentRooms.find(r => r.number === roomNumber);
+    if (room) {
+        selectedRoomData = room;
+        document.getElementById('guestLimitInfo').textContent = `Max ${room.maxGuests} guests allowed`;
+    }
+});
+
+document.getElementById('guestCount').addEventListener('change', () => {
+    if (!selectedRoomData) return;
+    const guestCount = parseInt(document.getElementById('guestCount').value, 10);
+    if (guestCount > selectedRoomData.maxGuests) {
+        alert(`Limit exceeded! This room allows maximum ${selectedRoomData.maxGuests} guests.`);
+    if (!idVerified) {
+        setMessage(bookingMessage, 'Please verify your guest ID before booking.', '#f87171');
+        return;
+    }
+    const roomNumber = parseInt(document.getElementById('roomNumber').value, 10);
+    const guestName = document.getElementById('guestName').value.trim();
+    const idType = document.getElementById('guestIdType').value;
+    const idNumber = document.getElementById('guestIdNumber').value.trim();
+    if (!roomNumber || !guestName || !idType || !idNumber) {
+        setMessage(bookingMessage, 'Please complete all booking details.', '#f87171');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/book', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomNumber, guestName })
+        });
+        const result = await response.json();
+        if (result.success) {
+            saveUserBooking(currentUser.email, {
+                roomNumber,
+                guestName,
+                idType,
+                idNumber,
+                date: new Date().toISOString()
+            });
+            setMessage(bookingMessage, 'Room booked successfully.', '#34d399');
+            idVerified = false;
+            verifyStatus.textContent = 'ID not verified';
+            verifyStatus.style.color = '#fbbf24';
+            submitBookingBtn.disabled = true;
+            loadRooms();
+            updateHistory();
+        } else {
+            setMessage(bookingMessage, result.message || 'Booking failed.', '#f87171');
+        }
+    } catch (error) {
+        setMessage(bookingMessage, 'Booking request failed: ' + error, '#f87171');
+    }
+});
+
+verifyIdBtn.addEventListener('click', () => {
+    const idType = document.getElementById('guestIdType').value;
+    const idNumber = document.getElementById('guestIdNumber').value.trim();
+    if (!idType || !idNumber) {
+        verifyStatus.textContent = 'Select an ID type and enter the ID number.';
+        verifyStatus.style.color = '#f87171';
+        idVerified = false;
+        submitBookingBtn.disabled = true;
+        return;
+    }
+
+    function isValidAadhaar(value) {
+        const cleaned = value.replace(/\s+/g, '');
+        return /^\d{12}$/.test(cleaned);
+    }
+
+    function isValidDrivingLicence(value) {
+        const cleaned = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+        // Require letters and digits, length between 8 and 20
+        return /[A-Za-z]/.test(cleaned) && /\d/.test(cleaned) && cleaned.length >= 8 && cleaned.length <= 20;
+    }
+
+    let valid = false;
+    if (idType === 'Aadhaar Card') {
+        valid = isValidAadhaar(idNumber);
+    } else if (idType === 'Driving Licence') {
+        valid = isValidDrivingLicence(idNumber);
+    } else {
+        valid = false;
+    }
+
+    if (!valid) {
+        verifyStatus.textContent = `Invalid ${idType} format.`;
+        verifyStatus.style.color = '#f87171';
+        idVerified = false;
+        submitBookingBtn.disabled = true;
+        return;
+    }
+
+    verifyStatus.textContent = `Verified ${idType}`;
+    verifyStatus.style.color = '#34d399';
+    idVerified = true;
+    submitBookingBtn.disabled = false;
+});
+
+refreshRoomsButton.addEventListener('click', () => loadRooms());
+
+accountButton.addEventListener('click', () => {
+    accountDropdown.classList.toggle('hidden');
+});
+
+btnBookRoom.addEventListener('click', () => {
+    toggleActiveSidebar(btnBookRoom);
+    showDashboardPanels('book');
+});
+
+btnAvailableRooms.addEventListener('click', () => {
+    toggleActiveSidebar(btnAvailableRooms);
+    showDashboardPanels('available');
+});
+
+if (showBookingsBtn) {
+    showBookingsBtn.addEventListener('click', () => {
+        showDashboardPanels('history');
+        updateHistory();
+    });
+}
+
+if (showPaymentsBtn) {
+    showPaymentsBtn.addEventListener('click', () => {
+        showDashboardPanels('history');
+        updateHistory();
+    });
+}
+
+if (showAvailableRoomsBtn) {
+    showAvailableRoomsBtn.addEventListener('click', () => {
+        location.hash = '#dashboard';
+        route();
+        toggleActiveSidebar(btnAvailableRooms);
+        showDashboardPanels('available');
+        loadRooms();
+        accountDropdown.classList.add('hidden');
+    });
+}
+
+signOutBtn.addEventListener('click', () => {
+    clearCurrentUser();
+    currentUser = null;
+    updateAccountArea();
+    location.hash = '#home';
+    route();
+});
+
+verifyIdBtn.addEventListener('click', () => {
+    const idType = document.getElementById('guestIdType').value;
+    const idNumber = document.getElementById('guestIdNumber').value.trim();
+
+    if (!idType || !idNumber) {
+        verifyStatus.textContent = 'Select an ID type and enter the ID number.';
+        verifyStatus.style.color = '#f87171';
+        idVerified = false;
+        submitBookingBtn.disabled = true;
+        return;
+    }
+
+    function isValidAadhaar(value) {
+        const cleaned = value.replace(/\s+/g, '');
+        return /^\d{12}$/.test(cleaned);
+    }
+
+    function isValidDrivingLicence(value) {
+        const cleaned = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+        return /[A-Za-z]/.test(cleaned) && /\d/.test(cleaned) && cleaned.length >= 8 && cleaned.length <= 20;
+    }
+
+    let valid = false;
+    if (idType === 'Aadhaar Card') {
+        valid = isValidAadhaar(idNumber);
+    } else if (idType === 'Driving Licence') {
+        valid = isValidDrivingLicence(idNumber);
+    }
+
+    if (!valid) {
+        verifyStatus.textContent = `Invalid ${idType} format.`;
+        verifyStatus.style.color = '#f87171';
+        idVerified = false;
+        submitBookingBtn.disabled = true;
+        return;
+    }
+
+    // Confirm previous entry before allowing next step
+    const masked = idNumber.length > 4 ? '****' + idNumber.slice(-4) : idNumber;
+    const confirmMsg = `Please confirm the ${idType} to verify:\nType: ${idType}\nID: ${masked}\n\nProceed?`;
+    if (!window.confirm(confirmMsg)) {
+        verifyStatus.textContent = `${idType} verification cancelled.`;
+        verifyStatus.style.color = '#f87171';
+        idVerified = false;
+        submitBookingBtn.disabled = true;
+        return;
+    }
+
+    verifyStatus.textContent = `Verified ${idType}`;
+    verifyStatus.style.color = '#34d399';
+    idVerified = true;
+    submitBookingBtn.disabled = false;
+});

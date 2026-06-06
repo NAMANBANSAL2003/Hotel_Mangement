@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="topbar">
+        <div class="topbar-brand">Hotel Management</div>
+        <div class="topbar-links">
+            <a href="dashboard.html#available" class="nav-link" data-target="book">BOOK</a>
+            <a href="about.html" class="nav-link" data-target="about">About</a>
+            <a href="login.html" target="_blank" rel="noopener" class="nav-link" data-target="login">Sign In</a>
+            <a href="register.html" target="_blank" rel="noopener" class="nav-link" data-target="register">Sign Up</a>
+            <div class="account-area hidden" id="accountArea">
+                <button id="accountButton" class="account-button" aria-label="Account menu">👤</button>
+                <div class="account-dropdown hidden" id="accountDropdown">
+                    <div class="account-header">
+                        <strong id="accountName">Guest</strong>
+                        <span id="accountEmail"></span>
+                    </div>
+                    <button type="button" id="accountHomeBtn">Home</button>
+                    <button type="button" id="accountPaymentsBtn">Payment History</button>
+                    <button type="button" id="accountBookingsBtn">Current Bookings</button>
+                    <button type="button" id="accountCancelBookingBtn" style="background:#f87171">Cancel Recent Booking</button>
+                    <button type="button" id="signOutBtn">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero" id="homeSection">
+            <div class="hero-overlay"></div>
+            <div class="hero-copy">
+                <h1>HOTEL MANAGEMENT SYSTEM</h1>
+                <p>Fast booking, secure guest verification and a simple account dashboard.</p>
+                
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="page page-home" id="homePage">
+                <div class="welcome-card">
+                    <h2>Welcome to Hotel Management</h2>
+                    <div class="contact-card">
+                        <h3>Contact</h3>
+                        <p>Phone: +1-555-123-4567</p>
+                        <p>Email: support@hotel.example.com</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page page-form hidden" id="loginPage">
+                <div class="form-card">
+                    <h2>Sign In</h2>
+                    <form id="loginForm">
+                        <label>Email address<input type="email" id="loginEmail" placeholder="name@example.com" required></label>
+                        <label>Password<input type="password" id="loginPassword" placeholder="Password" required></label>
+                        <button type="submit">Sign In</button>
+                    </form>
+                    <p class="form-note">New here? <a href="#register">Create an account</a>.</p>
+                    <p class="form-message" id="loginMessage"></p>
+                </div>
+            </div>
+
+            <div class="page page-form hidden" id="registerPage">
+                <div class="form-card">
+                    <h2>Create Account</h2>
+                    <form id="registerForm">
+                        <label>Full name<input type="text" id="registerName" placeholder="Your name" required></label>
+                        <label>Email address<input type="email" id="registerEmail" placeholder="name@example.com" required></label>
+                        <label>Password<input type="password" id="registerPassword" placeholder="Create password" required></label>
+                        <button type="submit">Register</button>
+                    </form>
+                    <p class="form-note">Already registered? <a href="#login">Sign in</a>.</p>
+                    <p class="form-message" id="registerMessage"></p>
+                </div>
+            </div>
+
+            <div class="page page-dashboard hidden" id="dashboardPage">
+                <div class="dashboard-top">
+                    <div>
+                        <h2 id="dashboardTitle">Dashboard</h2>
+                        <p id="dashboardSubtitle">Book rooms, view availability, and track your hotel activity.</p>
+                    </div>
+                    <div class="dashboard-stats">
+                        <div class="stat-card">
+                            <span class="stat-label">Available rooms</span>
+                            <strong id="availableCount">0</strong>
+                        </div>
+                        <div class="stat-card stat-accent">
+                            <span class="stat-label">Already booked</span>
+                            <strong>30</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <aside class="dashboard-sidebar">
+                        <button type="button" class="sidebar-btn active" id="btnBookRoom">Book Room</button>
+                        <button type="button" class="sidebar-btn" id="btnAvailableRooms">Available Rooms</button>
+                        <div class="sidebar-card">
+                            <h3>Your account</h3>
+                            <p>Sign in / sign up is available on the top right corner.</p>
+                        </div>
+                    </aside>
+
+                    <section class="dashboard-main">
+                        <div class="card" id="availableRoomsSection">
+                            <div class="card-header">
+                                <h3>Available Rooms</h3>
+                                <button type="button" class="small-btn" id="refreshRooms">Refresh</button>
+                            </div>
+                            <div id="availableRoomsList" class="room-list">Loading rooms...</div>
+                        </div>
+
+                        <div class="card hidden" id="bookingSection">
+                            <h3>Book a Room</h3>
+                            <form id="bookingForm">
+                                <label>Room number<input type="number" id="roomNumber" placeholder="e.g. 101" required></label>
+                                <label>Number of guests<input type="number" id="guestCount" placeholder="Number of guests" min="1" required></label>
+                                <span id="guestLimitInfo" style="color: #fbbf24; font-size: 0.9em;"></span>
+                                <label>Contact number<input type="tel" id="guestContact" placeholder="Contact number" required></label>
+                                <label>Booking period (days)<input type="number" id="bookingDays" placeholder="Number of days" min="1" value="1" required></label>
+                                <label>Guest name<input type="text" id="guestName" placeholder="Guest full name" required></label>
+                                <label>Guest ID type
+                                    <select id="guestIdType" required>
+                                        <option value="">Select ID type</option>
+                                        <option value="Aadhaar Card">Aadhaar Card</option>
+                                        <option value="Driving Licence">Driving Licence</option>
+                                    </select>
+                                </label>
+                                <label>ID number<input type="text" id="guestIdNumber" placeholder="ID number" required></label>
+                                <div class="verify-row">
+                                    <button type="button" id="verifyIdBtn" class="small-btn">Verify ID</button>
+                                    <span id="verifyStatus">ID not verified</span>
+                                </div>
+                                <button type="submit" id="submitBookingBtn" disabled>Proceed to Payment</button>
+                            </form>
+                            <p class="form-message" id="bookingMessage"></p>
+                        </div>
+
+                        <div class="card hidden" id="paymentSection">
+                            <h3>Payment</h3>
+                            <div id="paymentSummary">
+                                <p><strong>Room:</strong> <span id="payRoomNumber"></span></p>
+                                <p><strong>Guest Name:</strong> <span id="payGuestName"></span></p>
+                                <p><strong>Days:</strong> <span id="payDays"></span></p>
+                                <p><strong>Subtotal (excl. GST):</strong> ₹<span id="paySubtotal">0</span></p>
+                                <p id="couponApplied" style="display:none;"><strong>Coupon Discount (25%):</strong> -₹<span id="couponDiscount">0</span></p>
+                                <p><strong>GST (18%):</strong> ₹<span id="payGST">0</span></p>
+                                <p style="border-top: 1px solid #ccc; padding-top: 10px;"><strong>Total Amount:</strong> ₹<span id="payTotal">0</span></p>
+                            </div>
+                            <label>Coupon Code (optional)<input type="text" id="couponCode" placeholder="Enter coupon code (Naman@25 for 25% off)" /></label>
+                            <button type="button" id="applyCouponBtn" class="small-btn">Apply Coupon</button>
+                            <p id="couponMessage" style="font-size: 0.9em;"></p>
+                            <div style="margin-top: 20px;">
+                                <h4>Select Payment Method</h4>
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button type="button" class="payment-option-btn" data-method="upi">UPI</button>
+                                    <button type="button" class="payment-option-btn" data-method="creditCard">Credit Card</button>
+                                    <button type="button" class="payment-option-btn" data-method="amazonPay">Amazon Pay</button>
+                                </div>
+                            </div>
+                            <div id="paymentDetailsForm" style="display: none; margin-top: 20px;">
+                                <h4 id="paymentMethodTitle">Payment Details</h4>
+                                <form id="paymentForm">
+                                    <div id="upiDetails" style="display: none;">
+                                        <label>UPI ID<input type="text" id="upiId" placeholder="yourname@bankname" required /></label>
+                                    </div>
+                                    <div id="creditCardDetails" style="display: none;">
+                                        <label>Card Number<input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" required /></label>
+                                        <label>Expiry (MM/YY)<input type="text" id="cardExpiry" placeholder="MM/YY" required /></label>
+                                        <label>CVV<input type="password" id="cardCVV" placeholder="123" required /></label>
+                                        <label>Card Holder Name<input type="text" id="cardHolderName" placeholder="John Doe" required /></label>
+                                    </div>
+                                    <div id="amazonPayDetails" style="display: none;">
+                                        <label>Amazon Email<input type="email" id="amazonEmail" placeholder="your@email.com" required /></label>
+                                    </div>
+                                    <button type="submit" id="completePaymentBtn" class="small-btn">Complete Payment</button>
+                                </form>
+                            </div>
+                            <button type="button" id="cancelPaymentBtn" class="small-btn" style="background-color: #f87171; margin-top: 10px;">Cancel & Go Back</button>
+                            <p class="form-message" id="paymentMessage"></p>
+                        </div>
+
+                        <div class="card hidden" id="processingSection">
+                            <div style="text-align: center; padding: 40px;">
+                                <h3>Processing Payment...</h3>
+                                <div style="font-size: 48px; animation: spin 2s linear infinite;">⏳</div>
+                            </div>
+                        </div>
+
+                        <div class="card hidden" id="receiptSection">
+                            <h3>Payment Receipt</h3>
+                            <div id="receiptContent" style="border: 1px solid #ccc; padding: 20px; margin: 20px 0; background-color: #f9fafb;">
+                                <h4>HOTEL MANAGEMENT SYSTEM - BOOKING RECEIPT</h4>
+                                <hr />
+                                <p><strong>Receipt Date:</strong> <span id="receiptDate"></span></p>
+                                <p><strong>Guest Name:</strong> <span id="receiptGuestName"></span></p>
+                                <p><strong>Contact Number:</strong> <span id="receiptContact"></span></p>
+                                <p><strong>Room Number:</strong> <span id="receiptRoomNumber"></span></p>
+                                <p><strong>Room Type:</strong> <span id="receiptRoomType"></span></p>
+                                <p><strong>Booking Period:</strong> <span id="receiptDays"></span> day(s)</p>
+                                <p><strong>Number of Guests:</strong> <span id="receiptGuests"></span></p>
+                                <hr />
+                                <p><strong>Subtotal (excl. GST):</strong> ₹<span id="receiptSubtotal">0</span></p>
+                                <p id="receiptCouponLine" style="display:none;"><strong>Coupon Discount (25%):</strong> -₹<span id="receiptCouponDiscount">0</span></p>
+                                <p><strong>GST (18%):</strong> ₹<span id="receiptGST">0</span></p>
+                                <p style="border-top: 2px solid #000; padding-top: 10px; font-size: 1.2em;"><strong>Total Amount Paid:</strong> ₹<span id="receiptTotal">0</span></p>
+                                <hr />
+                                <p><strong>Payment Method:</strong> <span id="receiptPaymentMethod"></span></p>
+                                <p style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">Thank you for booking with us!</p>
+                            </div>
+                            <button type="button" id="downloadReceiptBtn" class="small-btn">Download Receipt</button>
+                            <button type="button" id="backToHomeBtn" class="small-btn" style="background-color: #3b82f6; margin-left: 10px;">Back to Home</button>
+                            <p class="form-message" id="receiptMessage"></p>
+                        </div>
+
+                        <div class="card hidden" id="historySection">
+                            <h3>Booking History</h3>
+                            <div id="historyList">No bookings yet.</div>
+                            <h3 class="section-title">Payment History</h3>
+                            <div id="paymentList">No payments recorded.</div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

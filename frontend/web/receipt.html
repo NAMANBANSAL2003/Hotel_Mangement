@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Payment Receipt</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background:#071126; color:#fff; font-family: sans-serif; }
+    .container{max-width:900px;margin:40px auto;padding:20px}
+    .card{background:rgba(255,255,255,0.03);padding:20px;border-radius:8px}
+    .small-btn{background:#111827;color:#fff;padding:10px 14px;border-radius:8px;border:none}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Payment Receipt</h2>
+    <div id="receiptArea" class="card">
+      <p id="noReceiptMsg">No receipt available.</p>
+      <div id="receiptContent" style="display:none">
+        <h3>HOTEL MANAGEMENT SYSTEM - BOOKING RECEIPT</h3>
+        <p><strong>Receipt Date:</strong> <span id="rDate"></span></p>
+        <p><strong>Guest Name:</strong> <span id="rGuest"></span></p>
+        <p><strong>Contact:</strong> <span id="rContact"></span></p>
+        <p><strong>Room Number:</strong> <span id="rRoom"></span></p>
+        <p><strong>Room Type:</strong> <span id="rType"></span></p>
+        <p><strong>No. Guests:</strong> <span id="rGuests"></span></p>
+        <hr />
+        <p><strong>Subtotal:</strong> ₹<span id="rSubtotal"></span></p>
+        <p id="rCouponLine" style="display:none"><strong>Coupon Discount:</strong> -₹<span id="rDiscount"></span></p>
+        <p><strong>GST (18%):</strong> ₹<span id="rGst"></span></p>
+        <p style="font-size:1.1em"><strong>Total Paid:</strong> ₹<span id="rTotal"></span></p>
+        <p><strong>Payment Method:</strong> <span id="rMethod"></span></p>
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <button id="downloadReceipt" class="small-btn">Download Receipt</button>
+      <button id="backHome" class="small-btn">Back to Home</button>
+    </div>
+  </div>
+  <script>
+    function loadReceipt(){
+      const raw = localStorage.getItem('hotel_last_receipt');
+      if (!raw) return;
+      try {
+        const booking = JSON.parse(raw);
+        document.getElementById('noReceiptMsg').style.display='none';
+        document.getElementById('receiptContent').style.display='block';
+        document.getElementById('rDate').textContent = new Date(booking.date).toLocaleString();
+        document.getElementById('rGuest').textContent = booking.guestName || '';
+        document.getElementById('rContact').textContent = booking.contactNumber || '';
+        document.getElementById('rRoom').textContent = booking.roomNumber || '';
+        document.getElementById('rType').textContent = booking.roomType || '';
+        document.getElementById('rGuests').textContent = booking.guestCount || '';
+        document.getElementById('rSubtotal').textContent = (booking.subtotal||0).toFixed(2);
+        if (booking.discount && booking.discount>0){
+          document.getElementById('rCouponLine').style.display='block';
+          document.getElementById('rDiscount').textContent = booking.discount.toFixed(2);
+        }
+        document.getElementById('rGst').textContent = (booking.gst||0).toFixed(2);
+        document.getElementById('rTotal').textContent = (booking.total||0).toFixed(2);
+        document.getElementById('rMethod').textContent = (booking.paymentMethod||'').toUpperCase();
+      } catch(e){ console.error(e); }
+    }
+    document.getElementById('downloadReceipt').addEventListener('click', ()=>{
+      const el = document.getElementById('receiptContent');
+      const text = el.innerText || el.textContent || '';
+      const a=document.createElement('a');
+      a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(text);
+      a.download='hotel_receipt_'+Date.now()+'.txt';
+      document.body.appendChild(a);a.click();a.remove();
+    });
+    document.getElementById('backHome').addEventListener('click', ()=>{ window.open('index.html','_self'); });
+    window.addEventListener('load', loadReceipt);
+  </script>
+</body>
+</html>

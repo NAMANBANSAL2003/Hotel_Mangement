@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Register - Hotel Management</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="content" style="max-width:480px;margin:80px auto;">
+    <div class="form-card">
+      <h2>Create Account</h2>
+      <form id="registerForm">
+        <label>Full name<input type="text" id="registerName" placeholder="Your name" required></label>
+        <label>Email address<input type="email" id="registerEmail" placeholder="name@example.com" required></label>
+        <label>Password<input type="password" id="registerPassword" placeholder="Create password" required></label>
+        <button type="submit">Register</button>
+      </form>
+      <p class="form-note">Already registered? <a href="login.html" target="_blank" rel="noopener">Sign in</a>.</p>
+      <p class="form-message" id="registerMessage"></p>
+    </div>
+  </main>
+
+  <script>
+    function getUsers(){return JSON.parse(localStorage.getItem('hotel_users')||'{}');}
+    function saveUsers(u){localStorage.setItem('hotel_users', JSON.stringify(u));}
+    function setMessage(el, text, color='#fbbf24'){el.textContent = text; el.style.color = color}
+
+    document.getElementById('registerForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      var name = document.getElementById('registerName').value.trim();
+      var email = document.getElementById('registerEmail').value.trim().toLowerCase();
+      var password = document.getElementById('registerPassword').value;
+      var msg = document.getElementById('registerMessage');
+      if(!name||!email||!password){ setMessage(msg, 'Please fill all fields', '#f87171'); return; }
+      var users = getUsers();
+      if(users[email]){ setMessage(msg, 'This email already exists', '#f87171'); return; }
+      users[email] = { name: name, email: email, password: password };
+      saveUsers(users);
+      setMessage(msg, 'Account created. Redirecting to sign in...', '#34d399');
+      setTimeout(function(){ window.open('login.html', '_self'); }, 900);
+    });
+  </script>
+</body>
+</html>
